@@ -18,6 +18,8 @@
 namespace ouster_ros {
 
 struct EIGEN_ALIGN16 Point {
+    Point(): data{0.f, 0.f, 0.f, 1.f} {}
+    Point(std::initializer_list<float> data, float intensity, float t, uint16_t reflectivity, uint16_t ring, uint16_t ambient, uint32_t range): data{*data.begin(),*(data.begin()+1),*(data.begin()+2),*(data.begin()+3)}, intensity(intensity), t(t), reflectivity(reflectivity), ring(ring), ambient(ambient), range(range) {}
     PCL_ADD_POINT4D;
     float intensity;
     uint32_t t;
