@@ -17,9 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PARENT_REPOSITORY: 'Formula-Electric-Belgium/DV_Autonomous_System'
-      CHECKOUT_BRANCH: 'dev/submodule_update'
+      CHECKOUT_BRANCH: 'develop'
       PR_AGAINST_BRANCH: 'develop'
       OWNER: 'Formula-Electric-Belgium'
+      REVIEWERS: 'MauritsVM', 'wouter-heerwegh'
 
     steps:
       ##########################
@@ -33,10 +34,11 @@ jobs:
       ####################################
       - name: run action
         id: run_action
-        uses: releasehub-com/github-action-create-pr-parent-submodule@v1
+        uses: Formula-Electric-Belgium/github-action-create-pr-parent-submodule@v1
         with:
           github_token: ${{ secrets.SECRET }}
           parent_repository: ${{ env.PARENT_REPOSITORY }}
           checkout_branch: ${{ env.CHECKOUT_BRANCH}}
           pr_against_branch: ${{ env.PR_AGAINST_BRANCH }}
+          reviewer: ${{ env.REVIEWERS }}
           owner: ${{ env.OWNER }}
