@@ -152,7 +152,6 @@ void copy_scan_to_cloud(ouster_ros::Cloud& cloud, const ouster::LidarScan& ls,
     }
 }
 
-// TODO: add custom parameters for changing fov
 template <typename PointT, typename RangeT, typename ReflectivityT,
           typename NearIrT, typename SignalT>
 void copy_scan_to_cloud(ouster_ros::Cloud& cloud, const ouster::LidarScan& ls,
@@ -167,48 +166,26 @@ void copy_scan_to_cloud(ouster_ros::Cloud& cloud, const ouster::LidarScan& ls,
     const auto rf = reflectivity.data();
     const auto nr = near_ir.data();
     const auto sg = signal.data();
-    
-    
-    // Check how many points are in the pointcloud (resize invalidates all data)
 
-    // Check how many points are in the pointcloud (resize invalidates all data)
-    uint32_t count = 0;
 #ifdef __OUSTER_UTILIZE_OPENMP__
 #pragma omp parallel for collapse(2)
 #endif
     for (auto u = 0; u < ls.h; u++) {
-        for (auto v = int(ls.w/4) - 50; v < int(ls.w*3/4) + 49; v++) {
+        for (auto v = 0; v < ls.w; v++) {
             const auto col_ts = timestamp[v];
             const auto ts = col_ts > scan_ts ? col_ts - scan_ts : 0UL;
             const auto idx = u * ls.w + v;
             const auto xyz = points.row(idx);
-            uint32_t range = static_cast<uint32_t>(rg[idx]);
-            if (0.5*1000 < range && range < 7.5*1000){
-                count++;
-            }
-        }
-    }
-    
-    for (auto u = 0; u < ls.h; u++) {
-        for (auto v = int(ls.w/4) - 50; v < int(ls.w*3/4) + 49; v++) {
-            const auto col_ts = timestamp[v];
-            const auto ts = col_ts > scan_ts ? col_ts - scan_ts : 0UL;
-            const auto idx = u * ls.w + v;
-            const auto xyz = points.row(idx);
-            uint32_t range = static_cast<uint32_t>(rg[idx]);
-            if (0.5*1000 < range && range < 10*1000){
-                cloud.points[count] = ouster_ros::Point{
-                    {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
-                    static_cast<float>(xyz(2)), 1.0f},
-                    static_cast<float>(sg[idx]),
-                    static_cast<uint32_t>(ts),
-                    static_cast<uint16_t>(rf[idx]),
-                    static_cast<uint16_t>(u),
-                    static_cast<uint16_t>(nr[idx]),
-                    static_cast<uint32_t>(rg[idx]),
-                };
-                count++;
-            }
+            cloud.points[idx] = ouster_ros::Point{
+                {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
+                 static_cast<float>(xyz(2)), 1.0f},
+                static_cast<float>(sg[idx]),
+                static_cast<uint32_t>(ts),
+                static_cast<uint16_t>(rf[idx]),
+                static_cast<uint16_t>(u),
+                static_cast<uint16_t>(nr[idx]),
+                static_cast<uint32_t>(rg[idx]),
+            };
         }
     }
 }
@@ -226,35 +203,29 @@ void copy_scan_to_cloud_destaggered(
     const auto rf = reflectivity.data();
     const auto nr = near_ir.data();
     const auto sg = signal.data();
-    uint32_t count = 0;
 
 #ifdef __OUSTER_UTILIZE_OPENMP__
 #pragma omp parallel for collapse(2)
 #endif
     for (auto u = 0; u < ls.h; u++) {
-        for (auto v = int(ls.w/4) - 50; v < int(ls.w*3/4) + 49; v++) {
+        for (auto v = 0; v < ls.w; v++) {
             const auto v_shift = (v + ls.w - pixel_shift_by_row[u]) % ls.w;
             auto ts = timestamp[v_shift]; ts = ts > scan_ts ? ts - scan_ts : 0UL;
             const auto src_idx = u * ls.w + v_shift;
             const auto tgt_idx = u * ls.w + v;
             const auto xyz = points.row(src_idx);
-            uint32_t range = static_cast<uint32_t>(rg[src_idx]);
-            if (0.5*1000 < range && range < 10*1000){
-                cloud.points[count] = ouster_ros::Point{
-                    {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
-                    static_cast<float>(xyz(2)), 1.0f},
-                    static_cast<float>(sg[src_idx]),
-                    static_cast<uint32_t>(ts),
-                    static_cast<uint16_t>(rf[src_idx]),
-                    static_cast<uint16_t>(u),
-                    static_cast<uint16_t>(nr[src_idx]),
-                    static_cast<uint32_t>(rg[src_idx]),
-                };
-                count++;
-            }
+            cloud.points[tgt_idx] = ouster_ros::Point{
+                {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
+                 static_cast<float>(xyz(2)), 1.0f},
+                static_cast<float>(sg[src_idx]),
+                static_cast<uint32_t>(ts),
+                static_cast<uint16_t>(rf[src_idx]),
+                static_cast<uint16_t>(u),
+                static_cast<uint16_t>(nr[src_idx]),
+                static_cast<uint32_t>(rg[src_idx]),
+            };
         }
     }
-    cloud.resize(count);
 }
 
 void scan_to_cloud_f(ouster::PointsF& points,
