@@ -23,7 +23,8 @@ find_package(
              roscpp
              tf2
              tf2_ros
-             nodelet)
+             nodelet
+             pcl_ros)
 
 # ==== Options ====
 add_compile_options(-std=c++17)
@@ -49,6 +50,7 @@ catkin_package(
     std_msgs
     sensor_msgs
     geometry_msgs
+    pcl_ros
   DEPENDS
     EIGEN3
 )
