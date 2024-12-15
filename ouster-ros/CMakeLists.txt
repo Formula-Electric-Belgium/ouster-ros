@@ -233,7 +233,7 @@ install(
   DIRECTORY
     ${_ouster_ros_INCLUDE_DIRS}
   DESTINATION
-    include/${PROJECT_NAME}
+    .
 )
 
 install(
