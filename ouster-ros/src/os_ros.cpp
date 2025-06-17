@@ -27,6 +27,8 @@ namespace ouster_ros {
 namespace sensor = ouster::sensor;
 using namespace ouster::util;
 using ouster_sensor_msgs::msg::PacketMsg;
+using ouster_sensor_msgs::msg::Telemetry;
+using ouster::sensor::LidarPacket;
 
 
 bool is_legacy_lidar_profile(const sensor::sensor_info& info) {
@@ -96,7 +98,7 @@ sensor_msgs::msg::Imu packet_to_imu_msg(const PacketMsg& pm,
 }
 
 namespace impl {
-sensor::ChanField suitable_return(sensor::ChanField input_field, bool second) {
+sensor::ChanField scan_return(sensor::ChanField input_field, bool second) {
     switch (input_field) {
         case sensor::ChanField::RANGE:
         case sensor::ChanField::RANGE2:
@@ -149,6 +151,14 @@ version parse_version(const std::string& fw_rev) {
     } catch (const std::exception&) {
         return invalid_version;
     }
+}
+
+void warn_mask_resized(int image_cols, int image_rows,
+                       int scan_height, int scan_width) {
+    auto logger = rclcpp::get_logger("ouster_ros");
+    RCLCPP_WARN_STREAM(logger, "Mask image has size (" << image_cols << "x" << image_rows << ")"
+                       << " but incoming scans has size (" << scan_height << "x" << scan_width << ")."
+                       << " Resizing mask to match the scans size.");    
 }
 
 }  // namespace impl
@@ -210,6 +220,18 @@ sensor_msgs::msg::LaserScan lidar_scan_to_laser_scan_msg(
     }
 
     return msg;
+}
+
+Telemetry lidar_packet_to_telemetry_msg(
+    const LidarPacket& lidar_packet, const rclcpp::Time& timestamp,
+    const sensor::packet_format& pf) {
+    Telemetry telemetry;
+    telemetry.header.stamp = timestamp;
+    telemetry.countdown_thermal_shutdown = pf.countdown_thermal_shutdown(lidar_packet.buf.data());
+    telemetry.countdown_shot_limiting = pf.countdown_shot_limiting(lidar_packet.buf.data());
+    telemetry.thermal_shutdown = pf.thermal_shutdown(lidar_packet.buf.data());
+    telemetry.shot_limiting = pf.shot_limiting(lidar_packet.buf.data());
+    return telemetry;
 }
 
 }  // namespace ouster_ros
